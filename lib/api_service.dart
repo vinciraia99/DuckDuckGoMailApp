@@ -7,9 +7,43 @@ const hostDuckDuckGO = "quack.duckduckgo.com";
 
 String getProxyUrl(String targetUrl) {
   if (kIsWeb) {
-    return Uri.http("api.allorigins.win", "get", {'url': targetUrl}).toString();
+    return Uri.http("api.allorigins.win", "get", {'callback':'response','url': targetUrl}).toString();
   }
   return targetUrl;
+}
+
+String _extractJson(String responseString) {
+  if(!kIsWeb){
+    return responseString;
+  }
+  // Trova l'inizio e la fine del JSON nella stringa
+  final regex = RegExp(r'response\((\{.*\})\)', dotAll: true);
+  final match = regex.firstMatch(responseString);
+
+  if (match != null) {
+    // Recupera il gruppo catturato (il JSON)
+    String jsonString = match.group(1) ?? '{}';
+
+    // Rimuove eventuali caratteri di escape all'interno del JSON
+    jsonString = jsonString.replaceAll(r'\"', '"');
+
+    // Decodifica il JSON
+    try {
+      dynamic jsonDecoded = jsonDecode(jsonString);
+      if (jsonDecoded is Map<String, dynamic>) {
+        return jsonString;
+      } else {
+        print('Il JSON decodificato non è una mappa');
+      }
+    } catch (e) {
+      print('Errore durante la decodifica JSON: $e');
+    }
+  } else {
+    print('Nessun match trovato nella stringa');
+  }
+
+  // Restituisce una mappa vuota se non viene trovato il JSON o se c'è un errore
+  return "{}";
 }
 
 Future<bool> loginRequest(String username) async {
@@ -32,8 +66,11 @@ Future<bool> loginRequest(String username) async {
     }
     if (response.statusCode == 200) {
       if (kIsWeb) {
-        final responseJson = jsonDecode(responseString);
-        if(responseJson["http_code"] != null && responseJson["http_code"] == 200){
+        final responseJson = jsonDecode(_extractJson(responseString));
+        if (kDebugMode) {
+          print(responseJson);
+        }
+        if(responseJson["status"]["http_code"] != null && responseJson["status"]["http_code"] == 200){
           return true;
         }else{
           return false;
