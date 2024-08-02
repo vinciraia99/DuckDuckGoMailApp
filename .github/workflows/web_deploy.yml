@@ -20,6 +20,11 @@ jobs:
       - run: flutter pub get
       - run: flutter build web --release
 
+      # Update base href in index.html
+      - name: Update base href in index.html
+        run: |
+          sed -i 's|<head>|<head><base href="/DuckDuckGoMailApp/">|' build/web/index.html
+
       # Deploy to GitHub Pages
       - name: Deploy to GitHub Pages
         run: |
