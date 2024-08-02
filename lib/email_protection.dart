@@ -1,13 +1,19 @@
-import 'package:duckduckgoemail/email_generate.dart';
 import 'package:flutter/material.dart';
+import 'package:duckduckgoemail/email_generate.dart'; // Assicurati di avere i percorsi corretti
 import 'api_service.dart';
 import 'login_screen.dart';
 
 class EmailInboxScreen extends StatelessWidget {
   final TextEditingController _otpController = TextEditingController();
   final String email;
+  final VoidCallback toggleTheme;
+  final ThemeMode themeMode;
 
-  EmailInboxScreen({required this.email, required VoidCallback toggleTheme, required ThemeMode themeMode});
+  EmailInboxScreen({
+    required this.email,
+    required this.toggleTheme,
+    required this.themeMode,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -26,15 +32,15 @@ class EmailInboxScreen extends StatelessWidget {
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              SizedBox(height: 20),
+              const SizedBox(height: 20),
               Text(
                 'Open the link we sent to $email in this browser or enter the one-time passphrase below.',
                 textAlign: TextAlign.center,
-                style: TextStyle(
+                style: const TextStyle(
                   fontSize: 16,
                 ),
               ),
-              SizedBox(height: 20),
+              const SizedBox(height: 20),
               TextField(
                 controller: _otpController,
                 decoration: InputDecoration(
@@ -46,15 +52,22 @@ class EmailInboxScreen extends StatelessWidget {
                   ),
                 ),
               ),
-              SizedBox(height: 20),
+              const SizedBox(height: 20),
               ElevatedButton(
                 onPressed: () {
                   if (_otpController.text.isNotEmpty) {
                     login(email, _otpController.text).then((success) {
-                      if (success != "") {
+                      if (success.isNotEmpty) {
                         Navigator.pushReplacement(
                           context,
-                          MaterialPageRoute(builder: (context) => EmailProtectionScreen(username: email, tokenMail: success, toggleTheme: () {  }, themeMode:  ThemeMode.light,))
+                          MaterialPageRoute(
+                            builder: (context) => EmailProtectionScreen(
+                              username: email,
+                              tokenMail: success,
+                              toggleTheme: toggleTheme,
+                              themeMode: themeMode,
+                            ),
+                          ),
                         );
                       } else {
                         showDialog(
@@ -94,10 +107,15 @@ class EmailInboxScreen extends StatelessWidget {
                 onPressed: () {
                   Navigator.pushReplacement(
                     context,
-                    MaterialPageRoute(builder: (context) => LoginScreen(toggleTheme: () {  }, themeMode:  ThemeMode.light,)),
+                    MaterialPageRoute(
+                      builder: (context) => LoginScreen(
+                        toggleTheme: toggleTheme,
+                        themeMode: themeMode,
+                      ),
+                    ),
                   );
                 },
-                child: Text(
+                child: const Text(
                   "Mail not correct? Go back",
                   style: TextStyle(
                     color: Colors.blue,

@@ -4,45 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
-void main() {
-  runApp(MyApp());
-}
-
-class MyApp extends StatefulWidget {
-  @override
-  _MyAppState createState() => _MyAppState();
-}
-
-class _MyAppState extends State<MyApp> {
-  ThemeMode _themeMode = ThemeMode.system;
-
-  void _toggleTheme() {
-    setState(() {
-      if (_themeMode == ThemeMode.light) {
-        _themeMode = ThemeMode.dark;
-      } else {
-        _themeMode = ThemeMode.light;
-      }
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Email Protection',
-      theme: ThemeData.light(),
-      darkTheme: ThemeData.dark(),
-      themeMode: _themeMode,
-      home: EmailProtectionScreen(
-        username: 'User123',
-        tokenMail: 'token123',
-        toggleTheme: _toggleTheme,
-        themeMode: _themeMode,
-      ),
-    );
-  }
-}
-
 class EmailProtectionScreen extends StatefulWidget {
   final String username;
   final String tokenMail;
@@ -63,7 +24,7 @@ class EmailProtectionScreen extends StatefulWidget {
 class _EmailProtectionScreenState extends State<EmailProtectionScreen> {
   final TextEditingController _emailGenController = TextEditingController();
   final List<Map<String, String>> _generatedEmails = [];
-
+  var token = "";
   int _selectedIndex = 0;
 
   @override
@@ -72,14 +33,21 @@ class _EmailProtectionScreenState extends State<EmailProtectionScreen> {
     _initializeEmailGenerator();
   }
 
+  void _generateCall(){
+    generate(widget.username, token).then((onValue){
+      final String generatedTime = DateFormat('yyyy-MM-dd – kk:mm').format(DateTime.now());
+      setState(() {
+        _emailGenController.text = onValue;
+        _generatedEmails.add({'email': onValue, 'time': generatedTime});
+      });
+    });
+  }
+
   void _initializeEmailGenerator() {
-    generate(widget.username, widget.tokenMail).then((success) {
-      if (success != null) {
-        final String generatedTime = DateFormat('yyyy-MM-dd – kk:mm').format(DateTime.now());
-        setState(() {
-          _emailGenController.text = success;
-          _generatedEmails.add({'email': success, 'time': generatedTime});
-        });
+    getDashboardTotp(widget.tokenMail).then((success) {
+      if (success != "null") {
+        token = success;
+        _generateCall();
       } else {
         showDialog(
           context: context,
@@ -94,6 +62,14 @@ class _EmailProtectionScreenState extends State<EmailProtectionScreen> {
       if (kDebugMode) {
         print(error);
       }
+      showDialog(
+        context: context,
+        builder: (context) {
+          return const AlertDialog(
+            content: Text('Errore!'),
+          );
+        },
+      );
     });
   }
 
@@ -197,7 +173,7 @@ class _EmailProtectionScreenState extends State<EmailProtectionScreen> {
           ),
           const SizedBox(height: 20),
           ElevatedButton(
-            onPressed: _initializeEmailGenerator, // Genera nuovo indirizzo email
+            onPressed: _generateCall, // Genera nuovo indirizzo email
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.blue, // Background color
               foregroundColor: Colors.white,
