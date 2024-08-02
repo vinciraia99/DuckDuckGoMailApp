@@ -20,6 +20,11 @@ jobs:
       - run: flutter pub get
       - run: flutter build web --release
 
+      # Update base href in index.html
+      - name: Update base href in index.html
+        run: |
+          sed -i 's|<head>|<head><base href="/DuckDuckGoMailApp/">|' build/web/index.html
+
       # Deploy to GitHub Pages
       - name: Deploy to GitHub Pages
         run: |
@@ -33,4 +38,5 @@ jobs:
           git config --global init.defaultBranch main
           git add .
           git commit -m "Deploy to GitHub Pages: ${{ github.event.head_commit.message }}"
-          git push --force "https://${{ secrets.ACCESS_TOKEN }}@github.com/vinciraia99/DuckDuckGoMailApp.git" main:gh-pages
+          git branch -M gh-pages
+          git push --force "https://${{ secrets.ACCESS_TOKEN }}@github.com/vinciraia99/DuckDuckGoMailApp.git" gh-pages
