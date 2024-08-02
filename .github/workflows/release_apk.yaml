@@ -1,3 +1,9 @@
+name: Create apk and push on release
+
+on:
+  push:
+    branches: [ master ]
+
 jobs:
   build:
     runs-on: ubuntu-latest
