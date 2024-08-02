@@ -1,29 +1,38 @@
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
 const headers = {
-  'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:128.0) Gecko/20100101 Firefox/128.0'
+  'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:128.0) Gecko/20100101 Firefox/128.0',
+};
+
+const headers2={
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "POST, GET, OPTIONS, PUT, DELETE, HEAD"
 };
 
 const hostDuckDuckGO = "quack.duckduckgo.com";
 
 String getProxyUrl(String targetUrl) {
   if (kIsWeb) {
-    return 'https://cors-anywhere.herokuapp.com/$targetUrl';
+    return  Uri.https("api.allorigins.win","get",{'url':targetUrl}).toString();
   }
   return targetUrl;
 }
 
 Future<bool> loginRequest(String username) async {
   var url = Uri.https(hostDuckDuckGO, '/api/auth/loginlink', {'user': username});
+  print(url.toString());
   var requestUrl = getProxyUrl(url.toString());
+  print(requestUrl);
   var request = http.Request('GET', Uri.parse(requestUrl));
 
   if (!kIsWeb) {
     request.headers.addAll(headers);
   }
+  request.headers.addAll(headers2);
 
   http.StreamedResponse response = await request.send();
   print(response.statusCode);
