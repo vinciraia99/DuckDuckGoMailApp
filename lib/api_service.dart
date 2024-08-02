@@ -31,15 +31,13 @@ Future<bool> loginRequest(String username) async {
     if (kDebugMode) {
       print('Response status: ${response.statusCode}');
     }
-    if (kDebugMode) {
+
       print('Response body: $responseString');
-    }
+
     if (response.statusCode == 200) {
       if (kIsWeb) {
         final responseJson = jsonDecode(responseString);
-        if (kDebugMode) {
           print(responseJson);
-        }
         if(responseJson["status"]["http_code"] != null && responseJson["status"]["http_code"] == 200){
           return true;
         }else{
