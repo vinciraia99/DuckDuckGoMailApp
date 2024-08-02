@@ -1,13 +1,6 @@
-name: Create apk and push on release
-
-on:
-  push:
-    branches: [ master ]
-
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -15,8 +8,8 @@ jobs:
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
-          channel: 'stable'
-      - run: flutter clean
+          flutter-version: '3.0.0'
+
       - name: Install dependencies
         run: flutter pub get
 
@@ -41,10 +34,10 @@ jobs:
             const response = await github.rest.repos.createRelease({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              tag_name: 'v1.0.${{ github.run_number }}',
-              name: 'Release v1.0.${{ github.run_number }}',
+              tag_name: `v1.0.${{ github.run_number }}`,
+              name: `Release v1.0.${{ github.run_number }}`,
               draft: false,
-              prerelease: false,
+              prerelease: true,
             });
             return response.data;
 
