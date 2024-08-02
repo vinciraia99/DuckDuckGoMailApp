@@ -7,7 +7,7 @@ const hostDuckDuckGO = "quack.duckduckgo.com";
 
 String getProxyUrl(String targetUrl) {
   if (kIsWeb) {
-    return Uri.https("api.allorigins.win", "raw", {'url': targetUrl}).toString();
+    return Uri.https("api.allorigins.win", "get", {'url': targetUrl}).toString();
   }
   return targetUrl;
 }
@@ -22,9 +22,6 @@ Future<bool> loginRequest(String username) async {
       'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:128.0) Gecko/20100101 Firefox/128.0',
     });
   }
-  request.headers.addAll({
-    'Accept': '*/*',
-  });
 
   print(request.headers);
 
@@ -60,7 +57,7 @@ Future<bool> loginRequest(String username) async {
 }
 
 
-jsonDecodeCustom(String response) {
+_jsonDecodeCustom(String response) {
   var json = jsonDecode(response);
   if (kIsWeb) {
     if(json["contents"]!= null){
@@ -82,7 +79,7 @@ Future<String> login(String username, String otp) async {
   try {
     http.StreamedResponse response = await request.send();
     final responseString = await response.stream.bytesToString();
-    final responseJson = jsonDecodeCustom(responseString);
+    final responseJson = _jsonDecodeCustom(responseString);
     print(responseJson);
     if (response.statusCode == 200 && responseJson["status"] == "authenticated") {
       var token = responseJson["token"];
@@ -112,7 +109,7 @@ Future<String> getDashboardTotp(String token) async {
     http.StreamedResponse response = await request.send();
     final responseString = await response.stream.bytesToString();
     print('Risposta raw: $responseString');
-    var responseJson = jsonDecodeCustom(responseString);
+    var responseJson = _jsonDecodeCustom(responseString);
     print('Risposta JSON: $responseJson');
     if (response.statusCode == 200) {
       if (responseJson["access_token"] != null) {
@@ -139,7 +136,7 @@ Future<String> generate(String username, String token) async {
   try {
     http.StreamedResponse response = await request.send();
     final responseString = await response.stream.bytesToString();
-    final responseJson = jsonDecodeCustom(responseString);
+    final responseJson = _jsonDecodeCustom(responseString);
     print("generate");
     print(responseJson);
     if (response.statusCode == 200 && responseJson["address"] != null) {
