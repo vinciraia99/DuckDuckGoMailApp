@@ -3,7 +3,7 @@ name: Deploy to GitHub Pages
 on:
   push:
     # Update branch according from where you will be pushing the code
-    branches: [ main ]
+    branches: [ master ]
 
 jobs:
   build:
