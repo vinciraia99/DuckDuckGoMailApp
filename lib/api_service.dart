@@ -17,9 +17,16 @@ Future<bool> loginRequest(String username) async {
   var requestUrl = getProxyUrl(url.toString());
   var request = http.Request('GET', Uri.parse(requestUrl));
 
+  if(!kIsWeb){
+    request.headers.addAll({
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:128.0) Gecko/20100101 Firefox/128.0',
+    });
+  }
   request.headers.addAll({
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:128.0) Gecko/20100101 Firefox/128.0',
+    'Accept': '*/*',
   });
+
+  print(request.headers);
 
   try {
     http.StreamedResponse response = await request.send();
