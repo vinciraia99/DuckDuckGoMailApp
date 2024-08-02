@@ -3,15 +3,23 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
-const headers= {
+const headers = {
   'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:128.0) Gecko/20100101 Firefox/128.0'
 };
 
 const hostDuckDuckGO = "quack.duckduckgo.com";
 
+String getProxyUrl(String targetUrl) {
+  if (kIsWeb) {
+    return 'https://cors-anywhere.herokuapp.com/$targetUrl';
+  }
+  return targetUrl;
+}
+
 Future<bool> loginRequest(String username) async {
   var url = Uri.https(hostDuckDuckGO, '/api/auth/loginlink', {'user': username});
-  var request = http.Request('GET', url);
+  var requestUrl = getProxyUrl(url.toString());
+  var request = http.Request('GET', Uri.parse(requestUrl));
 
   if (!kIsWeb) {
     request.headers.addAll(headers);
@@ -28,7 +36,9 @@ Future<bool> loginRequest(String username) async {
 Future<String> login(String username, String otp) async {
   var url = Uri.https(hostDuckDuckGO, '/api/auth/login', {'user': username, 'otp': otp});
   print(url.toString());
-  var request = http.Request('GET', url);
+  var requestUrl = getProxyUrl(url.toString());
+  var request = http.Request('GET', Uri.parse(requestUrl));
+
   if (!kIsWeb) {
     request.headers.addAll(headers);
   }
@@ -42,7 +52,7 @@ Future<String> login(String username, String otp) async {
     if(responseJson["status"] =="authenticated"){
       return responseJson["token"];
     }
-  }else{
+  } else {
     if (kDebugMode) {
       print(responseJson["error"]);
     }
@@ -73,10 +83,7 @@ Future<String> generate(String username, String token) async {
       print(responseJson["address"]);
     }
     return responseJson["address"] + "@duck.com";
-  }
-  else {
+  } else {
     return "null";
   }
 }
-
-
