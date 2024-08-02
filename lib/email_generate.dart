@@ -1,8 +1,10 @@
 import 'package:duckduckgoemail/api_service.dart';
+import 'package:duckduckgoemail/login_screen.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class EmailProtectionScreen extends StatefulWidget {
   final String username;
@@ -194,8 +196,19 @@ class _EmailProtectionScreenState extends State<EmailProtectionScreen> {
           ),
           const SizedBox(height: 20),
           TextButton(
-            onPressed: () {
-              // Implementa la logica di logout
+            onPressed: () async {
+              final prefs = await SharedPreferences.getInstance();
+              await prefs.remove('token');
+              await prefs.remove('username');
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => LoginScreen(
+                    toggleTheme: widget.toggleTheme,
+                    themeMode: widget.themeMode,
+                  ),
+                ),
+              );
             },
             child: const Text(
               'Sign Out',
