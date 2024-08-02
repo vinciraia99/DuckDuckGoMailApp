@@ -7,7 +7,7 @@ const hostDuckDuckGO = "quack.duckduckgo.com";
 
 String getProxyUrl(String targetUrl) {
   if (kIsWeb) {
-    return Uri.http("api.allorigins.win", "raw", {'url': targetUrl}).toString();
+    return Uri.https("api.allorigins.win", "raw", {'url': targetUrl}).toString();
   }
   return targetUrl;
 }
