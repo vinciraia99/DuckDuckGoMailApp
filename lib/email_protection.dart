@@ -51,7 +51,7 @@ class _EmailInboxScreenState extends State<EmailInboxScreen> {
             child: SingleChildScrollView(
               child: Padding(
                 padding: const EdgeInsets.all(16.0),
-                child: Container(
+                child: SizedBox(
                   width: constraints.maxWidth < 600 ? double.infinity : 400,
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -95,7 +95,7 @@ class _EmailInboxScreenState extends State<EmailInboxScreen> {
                         child: ElevatedButton(
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.blue, // Colore di sfondo
-                            padding: EdgeInsets.symmetric(horizontal: 50, vertical: 15),
+                            padding: const EdgeInsets.symmetric(horizontal: 50, vertical: 10),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(10),
                             ),
@@ -126,7 +126,7 @@ class _EmailInboxScreenState extends State<EmailInboxScreen> {
                                   showDialog(
                                     context: context,
                                     builder: (context) {
-                                      return AlertDialog(
+                                      return const AlertDialog(
                                         content: Text('Login failed. Please try again.'),
                                       );
                                     },
