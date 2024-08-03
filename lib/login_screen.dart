@@ -76,11 +76,13 @@ class LoginScreen extends StatelessWidget {
                               borderRadius: BorderRadius.circular(10),
                             ),
                           ),
-                          child: const Text(
-                            'Login',
-                            style: TextStyle(
-                              fontSize: 18, // Aumenta la dimensione del testo
-                              color: Colors.white, // Colore del testo
+                          child: const Center(
+                            child: Text(
+                              'Login',
+                              style: TextStyle(
+                                fontSize: 18, // Aumenta la dimensione del testo
+                                color: Colors.white, // Colore del testo
+                              ),
                             ),
                           ),
                           onPressed: () {
