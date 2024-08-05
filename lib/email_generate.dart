@@ -1,3 +1,4 @@
+import 'dart:convert';  // Importa il pacchetto per lavorare con JSON.
 import 'package:duckduckgoemail/api_service.dart';
 import 'package:duckduckgoemail/login_screen.dart';
 import 'package:flutter/foundation.dart';
@@ -25,22 +26,41 @@ class EmailProtectionScreen extends StatefulWidget {
 
 class _EmailProtectionScreenState extends State<EmailProtectionScreen> {
   final TextEditingController _emailGenController = TextEditingController();
-  final List<Map<String, String>> _generatedEmails = [];
+  List<Map<String, String>> _generatedEmails = [];
   var token = "";
   int _selectedIndex = 0;
 
   @override
   void initState() {
     super.initState();
+    _loadGeneratedEmails();
     _initializeEmailGenerator();
   }
 
-  void _generateCall(){
-    generate(widget.username, token).then((onValue){
+  void _loadGeneratedEmails() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? jsonString = prefs.getString('genmail');
+    if (jsonString != null) {
+      List<dynamic> jsonList = jsonDecode(jsonString);
+      setState(() {
+        _generatedEmails = jsonList.map((item) => Map<String, String>.from(item)).toList();
+      });
+    }
+  }
+
+  void _saveGeneratedEmails() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String jsonString = jsonEncode(_generatedEmails);
+    prefs.setString('genmail', jsonString);
+  }
+
+  void _generateCall() {
+    generate(widget.username, token).then((onValue) {
       final String generatedTime = DateFormat('yyyy-MM-dd – kk:mm').format(DateTime.now());
       setState(() {
         _emailGenController.text = onValue;
         _generatedEmails.add({'email': onValue, 'time': generatedTime});
+        _saveGeneratedEmails();
       });
     });
   }
@@ -51,28 +71,25 @@ class _EmailProtectionScreenState extends State<EmailProtectionScreen> {
         token = success;
         _generateCall();
       } else {
-        showDialog(
-          context: context,
-          builder: (context) {
-            return const AlertDialog(
-              content: Text('Errore!'),
-            );
-          },
-        );
+        _showErrorDialog();
       }
     }).catchError((error) {
       if (kDebugMode) {
         print(error);
       }
-      showDialog(
-        context: context,
-        builder: (context) {
-          return const AlertDialog(
-            content: Text('Errore!'),
-          );
-        },
-      );
+      _showErrorDialog();
     });
+  }
+
+  void _showErrorDialog() {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return const AlertDialog(
+          content: Text('Errore!'),
+        );
+      },
+    );
   }
 
   void _onItemTapped(int index) {
@@ -153,15 +170,16 @@ class _EmailProtectionScreenState extends State<EmailProtectionScreen> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Expanded(
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(5),
-                  ),
-                  child: TextField(
-                    controller: _emailGenController,
-                    readOnly: true,
+                child: TextField(
+                  controller: _emailGenController,
+                  readOnly: true,
+                  decoration: InputDecoration(
+                    filled: true,
+                    hintText: 'Email',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: BorderSide.none,
+                    ),
                   ),
                 ),
               ),
@@ -175,14 +193,14 @@ class _EmailProtectionScreenState extends State<EmailProtectionScreen> {
           ),
           const SizedBox(height: 20),
           ElevatedButton(
-            onPressed: (){
-              if(token == ""){
+            onPressed: () {
+              if (token == "") {
                 _initializeEmailGenerator();
               }
               _generateCall();
-            }, // Genera nuovo indirizzo email
+            },
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.blue, // Background color
+              backgroundColor: Colors.blue,
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(horizontal: 50, vertical: 15),
               shape: RoundedRectangleBorder(
