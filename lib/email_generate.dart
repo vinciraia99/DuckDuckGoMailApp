@@ -175,7 +175,12 @@ class _EmailProtectionScreenState extends State<EmailProtectionScreen> {
           ),
           const SizedBox(height: 20),
           ElevatedButton(
-            onPressed: _generateCall, // Genera nuovo indirizzo email
+            onPressed: (){
+              if(token == ""){
+                _initializeEmailGenerator();
+              }
+              _generateCall();
+            }, // Genera nuovo indirizzo email
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.blue, // Background color
               foregroundColor: Colors.white,

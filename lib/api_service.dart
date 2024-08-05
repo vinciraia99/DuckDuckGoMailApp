@@ -110,8 +110,8 @@ Future<String> getDashboardTotp(String token) async {
     var responseJson = _jsonDecodeCustom(responseString);
     print('Risposta JSON: $responseJson');
     if (response.statusCode == 200) {
-      if (responseJson["access_token"] != null) {
-        return responseJson["access_token"];
+      if (responseJson["user"]["access_token"]!=null) {
+        return responseJson["user"]["access_token"];
       }
     }
   } catch (e) {
@@ -137,7 +137,7 @@ Future<String> generate(String username, String token) async {
     final responseJson = _jsonDecodeCustom(responseString);
     print("generate");
     print(responseJson);
-    if (response.statusCode == 200 && responseJson["address"] != null) {
+    if ((response.statusCode == 201) && (responseJson["address"] != null)) {
       return responseJson["address"] + "@duck.com";
     }
   } catch (e) {
