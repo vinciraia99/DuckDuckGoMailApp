@@ -5,21 +5,46 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 const hostDuckDuckGO = "quack.duckduckgo.com";
 
+const duckMail = "@duck.com";
+
+_jsonDecodeCustom(String response, int statusCode) {
+  print(response);
+  var json = jsonDecode(response);
+  var result = {};
+
+  if (kIsWeb) {
+    if (json["contents"] != null) {
+      result['contents'] = json["contents"];
+    } else {
+      result['contents'] = json;
+    }
+    result['responseCode'] = json["status"]?["http_code"] ?? 'unknown';
+  } else {
+    result['contents'] = json;
+    result['responseCode'] = statusCode;
+  }
+
+  return result;
+}
+
 String getProxyUrl(String targetUrl) {
   if (kIsWeb) {
-    return Uri.https("api.allorigins.win", "get", {'url': targetUrl}).toString();
+    return Uri.https("api.allorigins.win", "get", {'url': targetUrl})
+        .toString();
   }
   return targetUrl;
 }
 
 Future<bool> loginRequest(String username) async {
-  var url = Uri.https(hostDuckDuckGO, '/api/auth/loginlink', {'user': username});
+  var url =
+      Uri.https(hostDuckDuckGO, '/api/auth/loginlink', {'user': username});
   var requestUrl = getProxyUrl(url.toString());
   var request = http.Request('GET', Uri.parse(requestUrl));
 
-  if(!kIsWeb){
+  if (!kIsWeb) {
     request.headers.addAll({
-      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:128.0) Gecko/20100101 Firefox/128.0',
+      'User-Agent':
+          'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:128.0) Gecko/20100101 Firefox/128.0',
     });
   }
 
@@ -28,25 +53,13 @@ Future<bool> loginRequest(String username) async {
   try {
     http.StreamedResponse response = await request.send();
     final responseString = await response.stream.bytesToString();
-    if (kDebugMode) {
-      print('Response status: ${response.statusCode}');
-    }
 
-      print('Response body: $responseString');
+    print('Response body: $responseString');
 
-    if (response.statusCode == 200) {
-      if (kIsWeb) {
-        final responseJson = jsonDecode(responseString);
-          print(responseJson);
-        if(responseJson["status"]["http_code"] != null && responseJson["status"]["http_code"] == 200){
-          return true;
-        }else{
-          return false;
-        }
-      }else{
-        return true;
-      }
+    final responseJson = _jsonDecodeCustom(responseString, response.statusCode);
 
+    if (responseJson["responseCode"] == 200) {
+      return true;
     }
   } catch (e) {
     print('Error: $e');
@@ -54,33 +67,25 @@ Future<bool> loginRequest(String username) async {
   return false;
 }
 
-
-_jsonDecodeCustom(String response) {
-  var json = jsonDecode(response);
-  if (kIsWeb) {
-    if(json["contents"]!= null){
-      json =  json["contents"];
-    }
-  }
-  return json;
-}
-
 Future<String> login(String username, String otp) async {
-  var url = Uri.https(hostDuckDuckGO, '/api/auth/login', {'user': username, 'otp': otp});
+  var url = Uri.https(
+      hostDuckDuckGO, '/api/auth/login', {'user': username, 'otp': otp});
   var requestUrl = getProxyUrl(url.toString());
   var request = http.Request('GET', Uri.parse(requestUrl));
 
   request.headers.addAll({
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:128.0) Gecko/20100101 Firefox/128.0',
+    'User-Agent':
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:128.0) Gecko/20100101 Firefox/128.0',
   });
 
   try {
     http.StreamedResponse response = await request.send();
     final responseString = await response.stream.bytesToString();
-    final responseJson = _jsonDecodeCustom(responseString);
+    final responseJson = _jsonDecodeCustom(responseString, response.statusCode);
     print(responseJson);
-    if (response.statusCode == 200 && responseJson["status"] == "authenticated") {
-      var token = responseJson["token"];
+    if (responseJson["responseCode"] == 200 &&
+        responseJson['contents']["status"] == "authenticated") {
+      var token = responseJson['contents']["token"];
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('token', token);
       await prefs.setString('username', username);
@@ -92,7 +97,8 @@ Future<String> login(String username, String otp) async {
   return "";
 }
 
-Future<String> getDashboardTotp(String token) async {
+Future<dynamic> getDashboardTotp(String token) async {
+  print(token);
   var request = http.Request(
     'GET',
     Uri.parse('https://quack.duckduckgo.com/api/email/dashboard'),
@@ -107,11 +113,14 @@ Future<String> getDashboardTotp(String token) async {
     http.StreamedResponse response = await request.send();
     final responseString = await response.stream.bytesToString();
     print('Risposta raw: $responseString');
-    var responseJson = _jsonDecodeCustom(responseString);
+    var responseJson = _jsonDecodeCustom(responseString, response.statusCode);
     print('Risposta JSON: $responseJson');
-    if (response.statusCode == 200) {
-      if (responseJson["user"]["access_token"]!=null) {
-        return responseJson["user"]["access_token"];
+    if (responseJson["responseCode"] == 200) {
+      if (responseJson['contents']["user"]["access_token"] != null) {
+        var jsonOutput = {};
+        jsonOutput["otp"] = responseJson['contents']["user"]["access_token"];
+        jsonOutput["email"] = responseJson['contents']["user"]["email"];
+        return jsonOutput;
       }
     }
   } catch (e) {
@@ -134,11 +143,11 @@ Future<String> generate(String username, String token) async {
   try {
     http.StreamedResponse response = await request.send();
     final responseString = await response.stream.bytesToString();
-    final responseJson = _jsonDecodeCustom(responseString);
-    print("generate");
+    print(responseString);
+    final responseJson = _jsonDecodeCustom(responseString, response.statusCode);
     print(responseJson);
-    if ((response.statusCode == 201) && (responseJson["address"] != null)) {
-      return responseJson["address"] + "@duck.com";
+    if ((response.statusCode == 201) && (responseJson['contents']["address"] != null)) {
+      return responseJson['contents']["address"] + duckMail;
     }
   } catch (e) {
     print('Error: $e');

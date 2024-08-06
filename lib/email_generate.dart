@@ -28,6 +28,8 @@ class _EmailProtectionScreenState extends State<EmailProtectionScreen> {
   final TextEditingController _emailGenController = TextEditingController();
   List<Map<String, String>> _generatedEmails = [];
   var token = "";
+  var originaMail = "";
+  bool _emailGenerated = false;  // Variabile di stato per tenere traccia se la mail è già stata generata
   int _selectedIndex = 0;
 
   @override
@@ -55,20 +57,29 @@ class _EmailProtectionScreenState extends State<EmailProtectionScreen> {
   }
 
   void _generateCall() {
+    if (_emailGenerated) return;  // Evita di rigenerare la mail se già generata
     generate(widget.username, token).then((onValue) {
       final String generatedTime = DateFormat('yyyy-MM-dd – kk:mm').format(DateTime.now());
       setState(() {
-        _emailGenController.text = onValue;
-        _generatedEmails.add({'email': onValue, 'time': generatedTime});
-        _saveGeneratedEmails();
+        if(onValue != "null" && !_isDuplicate(onValue)) {
+          _emailGenController.text = onValue;
+          _generatedEmails.add({'email': onValue, 'time': generatedTime});
+          _saveGeneratedEmails();
+          _emailGenerated = true;  // Imposta la variabile di stato a true dopo la generazione
+        }
       });
     });
   }
 
+  bool _isDuplicate(String email) {
+    return _generatedEmails.any((element) => element['email'] == email);
+  }
+
   void _initializeEmailGenerator() {
     getDashboardTotp(widget.tokenMail).then((success) {
-      if (success != "null") {
-        token = success;
+      if (success["otp"] != "null") {
+        originaMail = success["email"];
+        token = success["otp"];
         _generateCall();
       } else {
         _showErrorDialog();
@@ -102,7 +113,16 @@ class _EmailProtectionScreenState extends State<EmailProtectionScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Email Protection'),
+        title: Row(
+          children: [
+            Image.asset(
+              'assets/duck.png',
+              height: 30,
+            ),
+            SizedBox(width: 10),
+            Text('Email Protection'),
+          ],
+        ),
         actions: [
           IconButton(
             icon: Icon(
@@ -146,18 +166,29 @@ class _EmailProtectionScreenState extends State<EmailProtectionScreen> {
             height: 150,
           ),
           const SizedBox(height: 20),
-          const Text(
-            'Autofill enabled in this browser for',
-            style: TextStyle(
+          Text(
+            'This is default relay mail for $originaMail:',
+            style: const TextStyle(
               fontSize: 16,
             ),
           ),
-          Text(
-            widget.username,
-            style: const TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-            ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                "${widget.username}@duck.com",
+                style: const TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.copy, color: Colors.blue),
+                onPressed: () async {
+                  await Clipboard.setData(ClipboardData(text: "${widget.username}@duck.com"));
+                },
+              ),
+            ],
           ),
           const SizedBox(height: 20),
           const Text(
@@ -166,30 +197,39 @@ class _EmailProtectionScreenState extends State<EmailProtectionScreen> {
               fontSize: 16,
             ),
           ),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Expanded(
-                child: TextField(
-                  controller: _emailGenController,
-                  readOnly: true,
-                  decoration: InputDecoration(
-                    filled: true,
-                    hintText: 'Email',
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
-                      borderSide: BorderSide.none,
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final isSmallScreen = constraints.maxWidth < 600;
+              final maxWidth = isSmallScreen ? double.infinity : 400.0;
+
+              return ConstrainedBox(
+                constraints: BoxConstraints(maxWidth: maxWidth),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _emailGenController,
+                        readOnly: true,
+                        decoration: InputDecoration(
+                          filled: true,
+                          hintText: 'Email',
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                            borderSide: BorderSide.none,
+                          ),
+                        ),
+                      ),
                     ),
-                  ),
+                    IconButton(
+                      icon: const Icon(Icons.copy, color: Colors.blue),
+                      onPressed: () async {
+                        await Clipboard.setData(ClipboardData(text: _emailGenController.text));
+                      },
+                    ),
+                  ],
                 ),
-              ),
-              IconButton(
-                icon: const Icon(Icons.copy, color: Colors.blue),
-                onPressed: () async {
-                  await Clipboard.setData(ClipboardData(text: _emailGenController.text));
-                },
-              ),
-            ],
+              );
+            },
           ),
           const SizedBox(height: 20),
           ElevatedButton(
@@ -197,7 +237,9 @@ class _EmailProtectionScreenState extends State<EmailProtectionScreen> {
               if (token == "") {
                 _initializeEmailGenerator();
               }
+              _emailGenerated = false;
               _generateCall();
+              _emailGenerated = true;
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.blue,
@@ -223,6 +265,7 @@ class _EmailProtectionScreenState extends State<EmailProtectionScreen> {
               final prefs = await SharedPreferences.getInstance();
               await prefs.remove('token');
               await prefs.remove('username');
+              await prefs.remove("genmail");
               Navigator.pushReplacement(
                 context,
                 MaterialPageRoute(
