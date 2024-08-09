@@ -73,10 +73,12 @@ Future<String> login(String username, String otp) async {
   var requestUrl = getProxyUrl(url.toString());
   var request = http.Request('GET', Uri.parse(requestUrl));
 
-  request.headers.addAll({
-    'User-Agent':
-        'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:128.0) Gecko/20100101 Firefox/128.0',
-  });
+  if (!kIsWeb) {
+    request.headers.addAll({
+      'User-Agent':
+      'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:128.0) Gecko/20100101 Firefox/128.0',
+    });
+  }
 
   try {
     http.StreamedResponse response = await request.send();
@@ -87,7 +89,7 @@ Future<String> login(String username, String otp) async {
         responseJson['contents']["status"] == "authenticated") {
       var token = responseJson['contents']["token"];
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('token', token);
+      //await prefs.setString('token', token);
       await prefs.setString('username', username);
       return token;
     }
@@ -117,6 +119,9 @@ Future<dynamic> getDashboardTotp(String token) async {
     print('Risposta JSON: $responseJson');
     if (responseJson["responseCode"] == 200) {
       if (responseJson['contents']["user"]["access_token"] != null) {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('token', responseJson['contents']["user"]["access_token"]);
+        await prefs.setString('originalMail',  responseJson['contents']["user"]["email"]);
         var jsonOutput = {};
         jsonOutput["otp"] = responseJson['contents']["user"]["access_token"];
         jsonOutput["email"] = responseJson['contents']["user"]["email"];
@@ -130,6 +135,7 @@ Future<dynamic> getDashboardTotp(String token) async {
 }
 
 Future<String> generate(String username, String token) async {
+  print(token);
   var request = http.Request(
     'POST',
     Uri.parse('https://quack.duckduckgo.com/api/email/addresses'),

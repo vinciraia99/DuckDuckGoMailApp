@@ -66,7 +66,7 @@ class _MyAppState extends State<MyApp> {
           final prefs = snapshot.data;
           final token = prefs?.getString("token");
           final username = prefs?.getString("username");
-
+          final originalMail = prefs?.getString("originalMail");
           return MaterialApp(
             title: 'DuckDuckGo Email Relay',
             theme: ThemeData(
@@ -78,10 +78,11 @@ class _MyAppState extends State<MyApp> {
               primarySwatch: Colors.blue,
             ),
             themeMode: _themeMode,
-            home: (username != null && token != null)
+            home: (username!.isNotEmpty && token!.isNotEmpty && originalMail!.isNotEmpty)
                 ? EmailProtectionScreen(
               username: username,
               tokenMail: token,
+              originalMail: originalMail,
               toggleTheme: _toggleTheme,
               themeMode: _themeMode,
             )

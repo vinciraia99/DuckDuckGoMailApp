@@ -111,17 +111,20 @@ class _EmailInboxScreenState extends State<EmailInboxScreen> {
                             if (_otpController.text.isNotEmpty) {
                               login(widget.email, _otpController.text).then((success) {
                                 if (success.isNotEmpty) {
+                                getDashboardTotp(success).then((onValue){
                                   Navigator.pushReplacement(
                                     context,
                                     MaterialPageRoute(
                                       builder: (context) => EmailProtectionScreen(
                                         username: widget.email,
-                                        tokenMail: success,
+                                        tokenMail:  onValue["otp"],
+                                        originalMail: onValue["email"],
                                         toggleTheme: widget.toggleTheme,
                                         themeMode: widget.themeMode,
                                       ),
                                     ),
                                   );
+                                });
                                 } else {
                                   showDialog(
                                     context: context,

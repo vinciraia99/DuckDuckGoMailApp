@@ -12,10 +12,12 @@ class EmailProtectionScreen extends StatefulWidget {
   final String tokenMail;
   final VoidCallback toggleTheme;
   final ThemeMode themeMode;
+  final String originalMail;
 
   EmailProtectionScreen({
     required this.username,
     required this.tokenMail,
+    required this.originalMail,
     required this.toggleTheme,
     required this.themeMode,
   });
@@ -28,7 +30,6 @@ class _EmailProtectionScreenState extends State<EmailProtectionScreen> {
   final TextEditingController _emailGenController = TextEditingController();
   List<Map<String, String>> _generatedEmails = [];
   var token = "";
-  var originaMail = "";
   bool _emailGenerated = false;  // Variabile di stato per tenere traccia se la mail è già stata generata
   int _selectedIndex = 0;
 
@@ -36,7 +37,9 @@ class _EmailProtectionScreenState extends State<EmailProtectionScreen> {
   void initState() {
     super.initState();
     _loadGeneratedEmails();
-    _initializeEmailGenerator();
+    token = widget.tokenMail;
+    _generateCall();
+    //_initializeEmailGenerator();
   }
 
   void _loadGeneratedEmails() async {
@@ -57,7 +60,7 @@ class _EmailProtectionScreenState extends State<EmailProtectionScreen> {
   }
 
   void _generateCall() {
-    if (_emailGenerated) return;  // Evita di rigenerare la mail se già generata
+    if (_emailGenerated) return;
     generate(widget.username, token).then((onValue) {
       final String generatedTime = DateFormat('yyyy-MM-dd – kk:mm').format(DateTime.now());
       setState(() {
@@ -65,7 +68,7 @@ class _EmailProtectionScreenState extends State<EmailProtectionScreen> {
           _emailGenController.text = onValue;
           _generatedEmails.add({'email': onValue, 'time': generatedTime});
           _saveGeneratedEmails();
-          _emailGenerated = true;  // Imposta la variabile di stato a true dopo la generazione
+          _emailGenerated = true;
         }
       });
     });
@@ -75,7 +78,7 @@ class _EmailProtectionScreenState extends State<EmailProtectionScreen> {
     return _generatedEmails.any((element) => element['email'] == email);
   }
 
-  void _initializeEmailGenerator() {
+  /*void _initializeEmailGenerator() {
     getDashboardTotp(widget.tokenMail).then((success) {
       if (success["otp"] != "null") {
         originaMail = success["email"];
@@ -90,7 +93,7 @@ class _EmailProtectionScreenState extends State<EmailProtectionScreen> {
       }
       _showErrorDialog();
     });
-  }
+  }*/
 
   void _showErrorDialog() {
     showDialog(
@@ -167,7 +170,7 @@ class _EmailProtectionScreenState extends State<EmailProtectionScreen> {
           ),
           const SizedBox(height: 20),
           Text(
-            'This is default relay mail for $originaMail:',
+            'This is default relay mail for ${widget.originalMail}:',
             style: const TextStyle(
               fontSize: 16,
             ),
@@ -234,9 +237,9 @@ class _EmailProtectionScreenState extends State<EmailProtectionScreen> {
           const SizedBox(height: 20),
           ElevatedButton(
             onPressed: () {
-              if (token == "") {
+              /*if (token == "") {
                 _initializeEmailGenerator();
-              }
+              }*/
               _emailGenerated = false;
               _generateCall();
               _emailGenerated = true;
