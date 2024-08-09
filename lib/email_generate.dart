@@ -1,11 +1,10 @@
-import 'dart:convert';  // Importa il pacchetto per lavorare con JSON.
+import 'dart:convert';  // Import for working with JSON.
 import 'package:duckduckgoemail/api_service.dart';
 import 'package:duckduckgoemail/login_screen.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:intl/intl.dart';
+import 'package:flutter/services.dart';
 
 class EmailProtectionScreen extends StatefulWidget {
   final String username;
@@ -29,17 +28,22 @@ class EmailProtectionScreen extends StatefulWidget {
 class _EmailProtectionScreenState extends State<EmailProtectionScreen> {
   final TextEditingController _emailGenController = TextEditingController();
   List<Map<String, String>> _generatedEmails = [];
-  var token = "";
-  bool _emailGenerated = false;  // Variabile di stato per tenere traccia se la mail è già stata generata
+  var _token = "";
   int _selectedIndex = 0;
 
   @override
   void initState() {
     super.initState();
     _loadGeneratedEmails();
-    token = widget.tokenMail;
-    _generateCall();
-    //_initializeEmailGenerator();
+    _token = widget.tokenMail;
+    SharedPreferences.getInstance().then((prefs) {
+      var lastGeneratedMail = prefs.getString("lastGeneratedMail");
+      if (lastGeneratedMail != null && lastGeneratedMail.isNotEmpty) {
+        _emailGenController.text = lastGeneratedMail;
+      } else {
+        _generateCall();
+      }
+    });
   }
 
   void _loadGeneratedEmails() async {
@@ -60,15 +64,21 @@ class _EmailProtectionScreenState extends State<EmailProtectionScreen> {
   }
 
   void _generateCall() {
-    if (_emailGenerated) return;
-    generate(widget.username, token).then((onValue) {
+    generate(widget.username, _token).then((onValue) {
       final String generatedTime = DateFormat('yyyy-MM-dd – kk:mm').format(DateTime.now());
       setState(() {
-        if(onValue != "null" && !_isDuplicate(onValue)) {
+        if (onValue != "null" && !_isDuplicate(onValue)) {
           _emailGenController.text = onValue;
           _generatedEmails.add({'email': onValue, 'time': generatedTime});
           _saveGeneratedEmails();
-          _emailGenerated = true;
+          SharedPreferences.getInstance().then((prefs) {
+            prefs.setString("lastGeneratedMail", _emailGenController.text);
+          });
+        } else if (onValue != "null" && _emailGenController.text.isEmpty) {
+          _emailGenController.text = onValue;
+          SharedPreferences.getInstance().then((prefs) {
+            prefs.setString("lastGeneratedMail", _emailGenController.text);
+          });
         }
       });
     });
@@ -78,32 +88,15 @@ class _EmailProtectionScreenState extends State<EmailProtectionScreen> {
     return _generatedEmails.any((element) => element['email'] == email);
   }
 
-  /*void _initializeEmailGenerator() {
-    getDashboardTotp(widget.tokenMail).then((success) {
-      if (success["otp"] != "null") {
-        originaMail = success["email"];
-        token = success["otp"];
-        _generateCall();
-      } else {
-        _showErrorDialog();
-      }
-    }).catchError((error) {
-      if (kDebugMode) {
-        print(error);
-      }
-      _showErrorDialog();
+  void _clearHistory() async {
+    // Clear the list in memory
+    setState(() {
+      _generatedEmails.clear();
     });
-  }*/
 
-  void _showErrorDialog() {
-    showDialog(
-      context: context,
-      builder: (context) {
-        return const AlertDialog(
-          content: Text('Errore!'),
-        );
-      },
-    );
+    // Clear the data in SharedPreferences
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.remove('genmail');
   }
 
   void _onItemTapped(int index) {
@@ -133,6 +126,37 @@ class _EmailProtectionScreenState extends State<EmailProtectionScreen> {
             ),
             onPressed: widget.toggleTheme,
           ),
+          if (_selectedIndex == 1) // Show only on the "History" tab
+            IconButton(
+              icon: Icon(Icons.delete),
+              onPressed: () async {
+                // Show a confirmation dialog
+                bool? confirmDelete = await showDialog(
+                  context: context,
+                  builder: (BuildContext context) {
+                    return AlertDialog(
+                      title: Text('Confirm Deletion'),
+                      content: Text('Are you sure you want to clear all history?'),
+                      actions: <Widget>[
+                        TextButton(
+                          onPressed: () => Navigator.of(context).pop(false),
+                          child: Text('Cancel'),
+                        ),
+                        TextButton(
+                          onPressed: () => Navigator.of(context).pop(true),
+                          child: Text('Confirm'),
+                        ),
+                      ],
+                    );
+                  },
+                );
+
+                // Clear history if the user confirms
+                if (confirmDelete == true) {
+                  _clearHistory();
+                }
+              },
+            ),
         ],
       ),
       body: Center(
@@ -237,12 +261,7 @@ class _EmailProtectionScreenState extends State<EmailProtectionScreen> {
           const SizedBox(height: 20),
           ElevatedButton(
             onPressed: () {
-              /*if (token == "") {
-                _initializeEmailGenerator();
-              }*/
-              _emailGenerated = false;
               _generateCall();
-              _emailGenerated = true;
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.blue,
@@ -269,6 +288,7 @@ class _EmailProtectionScreenState extends State<EmailProtectionScreen> {
               await prefs.remove('token');
               await prefs.remove('username');
               await prefs.remove("genmail");
+              await prefs.remove("originalMail");
               Navigator.pushReplacement(
                 context,
                 MaterialPageRoute(
@@ -293,8 +313,10 @@ class _EmailProtectionScreenState extends State<EmailProtectionScreen> {
     return ListView.builder(
       itemCount: _generatedEmails.length,
       itemBuilder: (context, index) {
-        final email = _generatedEmails[index]['email'];
-        final time = _generatedEmails[index]['time'];
+        // Calculate the reverse index
+        final reverseIndex = _generatedEmails.length - 1 - index;
+        final email = _generatedEmails[reverseIndex]['email'];
+        final time = _generatedEmails[reverseIndex]['time'];
         return Card(
           margin: const EdgeInsets.symmetric(vertical: 8),
           child: ListTile(
