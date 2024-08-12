@@ -1,8 +1,9 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:app_links/app_links.dart';
 import 'login_screen.dart';
-import 'email_generate.dart'; // Assicurati di avere i percorsi corretti
+import 'email_generate.dart';
 
 void main() {
   runApp(MyApp());
@@ -19,22 +20,29 @@ class _MyAppState extends State<MyApp> {
 
   void _toggleTheme() {
     setState(() {
-      if (_themeMode == ThemeMode.light) {
-        _themeMode = ThemeMode.dark;
-      } else {
-        _themeMode = ThemeMode.light;
-      }
+      _themeMode = _themeMode == ThemeMode.light ? ThemeMode.dark : ThemeMode.light;
     });
   }
 
   @override
   void initState() {
+    if (!kIsWeb) {
+      _appLinks.uriLinkStream.listen((Uri? uri) {
+        if (uri != null) {
+          print("URI Received: $uri");
+          print("Host: ${uri.host}");
+          print("Path: ${uri.path}");
+          print("Query Parameters: ${uri.queryParameters}");
+
+          if (uri.host == 'duckduckgo.com' && uri.path == '/email/login') {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              _showMessage('You are trying to access DuckDuckGo with OTP: ${uri.queryParameters['otp']}');
+            });
+          }
+        }
+      });
+    }
     super.initState();
-    _appLinks.uriLinkStream.listen((Uri? uri) {
-      if (uri != null && uri.host == 'duckduckgo.com') {
-        _showMessage('You are trying to access duckduckgo.com');
-      }
-    });
   }
 
   void _showMessage(String message) {
@@ -78,7 +86,7 @@ class _MyAppState extends State<MyApp> {
               primarySwatch: Colors.blue,
             ),
             themeMode: _themeMode,
-            home: (username!.isNotEmpty && token!.isNotEmpty && originalMail!.isNotEmpty)
+            home: (username != null && username.isNotEmpty && token != null && token.isNotEmpty && originalMail != null && originalMail.isNotEmpty)
                 ? EmailProtectionScreen(
               username: username,
               tokenMail: token,
